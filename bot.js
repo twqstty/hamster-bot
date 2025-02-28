@@ -20,7 +20,7 @@ app.post(`/bot${token}`, (req, res) => {
     res.sendStatus(200);
 });
 
-bot.setWebHook(`https://hamster-bot.onrender.com/bot${token}`); // Обновишь после Render
+bot.setWebHook(`https://hamster-bot-jj2f.onrender.com${token}`); // Обновишь после Render
 
 bot.on('message', (msg) => {
     if (msg.web_app_data) {
