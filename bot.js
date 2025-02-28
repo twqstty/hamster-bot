@@ -21,6 +21,7 @@ if (fs.existsSync('players.json')) {
 }
 
 app.post(`/bot${token}`, (req, res) => {
+    console.log('Получен запрос от Telegram:', req.body); // Лог для отладки
     bot.processUpdate(req.body);
     res.sendStatus(200);
 });
@@ -43,6 +44,7 @@ bot.on('message', (msg) => {
 });
 
 bot.onText(/\/start/, (msg) => {
+    console.log(`Получена команда /start от ${msg.from.id}`); // Лог для отладки
     bot.sendMessage(msg.chat.id, 'Жми "Играть" и погнали!', {
         reply_markup: {
             keyboard: [[{ text: 'Играть', web_app: { url: 'https://twqstty.github.io/HAMSTERR/' } }]],
@@ -52,6 +54,7 @@ bot.onText(/\/start/, (msg) => {
 });
 
 bot.onText(/\/stats/, (msg) => {
+    console.log(`Получена команда /stats от ${msg.from.id}`); // Лог для отладки
     if (msg.from.id.toString() === adminId) {
         let reply = 'Статистика игроков:\n';
         for (const [name, stats] of Object.entries(players)) {
@@ -63,13 +66,18 @@ bot.onText(/\/stats/, (msg) => {
     }
 });
 
-// Новая команда /reset для сброса статистики
 bot.onText(/\/reset/, (msg) => {
+    console.log(`Получена команда /reset от ${msg.from.id}`); // Лог для отладки
     if (msg.from.id.toString() === adminId) {
-        players = {}; // Очищаем объект players
-        fs.writeFileSync('players.json', JSON.stringify(players)); // Перезаписываем пустой файл
-        bot.sendMessage(adminId, 'Статистика всех игроков сброшена!');
-        console.log('Статистика сброшена админом');
+        players = {};
+        try {
+            fs.writeFileSync('players.json', JSON.stringify(players));
+            bot.sendMessage(adminId, 'Статистика всех игроков сброшена!');
+            console.log('Статистика успешно сброшена админом');
+        } catch (err) {
+            console.error('Ошибка при сбросе статистики:', err);
+            bot.sendMessage(adminId, 'Ошибка при сбросе статистики!');
+        }
     } else {
         bot.sendMessage(msg.chat.id, 'Ты не админ, братан!');
     }
