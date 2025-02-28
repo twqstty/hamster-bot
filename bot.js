@@ -6,7 +6,12 @@ const app = express();
 const port = process.env.PORT || 3000;
 app.use(express.json());
 
-const token = process.env.TOKEN; // Токен берётся только из переменной окружения
+const token = process.env.TOKEN;
+if (!token) {
+    console.error('Ошибка: Токен не задан в переменной окружения TOKEN');
+    process.exit(1);
+}
+
 const bot = new TelegramBot(token);
 const adminId = '857785777'; // Твой Telegram ID
 let players = {};
@@ -20,7 +25,9 @@ app.post(`/bot${token}`, (req, res) => {
     res.sendStatus(200);
 });
 
-bot.setWebHook(`https://hamster-bot-jj2f.onrender.com/bot${token}`); // Правильный URL от Render
+bot.setWebHook(`https://hamster-bot-jj2f.onrender.com/bot${token}`)
+    .then(() => console.log('Webhook успешно установлен'))
+    .catch(err => console.error('Ошибка установки webhook:', err));
 
 bot.on('message', (msg) => {
     if (msg.web_app_data) {
@@ -51,6 +58,18 @@ bot.onText(/\/stats/, (msg) => {
             reply += `${name}: ${stats.score} очков, ${stats.clicks} кликов, ур. ${stats.level}\n`;
         }
         bot.sendMessage(adminId, reply || 'Пока никто не играл');
+    } else {
+        bot.sendMessage(msg.chat.id, 'Ты не админ, братан!');
+    }
+});
+
+// Новая команда /reset для сброса статистики
+bot.onText(/\/reset/, (msg) => {
+    if (msg.from.id.toString() === adminId) {
+        players = {}; // Очищаем объект players
+        fs.writeFileSync('players.json', JSON.stringify(players)); // Перезаписываем пустой файл
+        bot.sendMessage(adminId, 'Статистика всех игроков сброшена!');
+        console.log('Статистика сброшена админом');
     } else {
         bot.sendMessage(msg.chat.id, 'Ты не админ, братан!');
     }
