@@ -3,7 +3,7 @@ const express = require('express');
 const fs = require('fs');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000; // Порт из логов Render
 app.use(express.json());
 
 const token = process.env.TOKEN;
@@ -21,7 +21,7 @@ if (fs.existsSync('players.json')) {
 }
 
 app.post(`/bot${token}`, (req, res) => {
-    console.log('Получен запрос от Telegram:', req.body); // Лог для отладки
+    console.log('Получен запрос от Telegram:', req.body);
     bot.processUpdate(req.body);
     res.sendStatus(200);
 });
@@ -44,7 +44,7 @@ bot.on('message', (msg) => {
 });
 
 bot.onText(/\/start/, (msg) => {
-    console.log(`Получена команда /start от ${msg.from.id}`); // Лог для отладки
+    console.log(`Получена команда /start от ${msg.from.id}`);
     bot.sendMessage(msg.chat.id, 'Жми "Играть" и погнали!', {
         reply_markup: {
             keyboard: [[{ text: 'Играть', web_app: { url: 'https://twqstty.github.io/HAMSTERR/' } }]],
@@ -54,7 +54,7 @@ bot.onText(/\/start/, (msg) => {
 });
 
 bot.onText(/\/stats/, (msg) => {
-    console.log(`Получена команда /stats от ${msg.from.id}`); // Лог для отладки
+    console.log(`Получена команда /stats от ${msg.from.id}`);
     if (msg.from.id.toString() === adminId) {
         let reply = 'Статистика игроков:\n';
         for (const [name, stats] of Object.entries(players)) {
@@ -67,7 +67,7 @@ bot.onText(/\/stats/, (msg) => {
 });
 
 bot.onText(/\/reset/, (msg) => {
-    console.log(`Получена команда /reset от ${msg.from.id}`); // Лог для отладки
+    console.log(`Получена команда /reset от ${msg.from.id}`);
     if (msg.from.id.toString() === adminId) {
         players = {};
         try {
