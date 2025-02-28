@@ -15,7 +15,6 @@ if (!token) {
 const bot = new TelegramBot(token);
 const adminId = '857785777';
 let players = {};
-let resetFlag = false; // Флаг сброса
 
 if (fs.existsSync('players.json')) {
     players = JSON.parse(fs.readFileSync('players.json'));
@@ -34,15 +33,13 @@ bot.setWebHook(`https://hamster-bot-jj2f.onrender.com/bot${token}`)
 bot.on('message', (msg) => {
     if (msg.web_app_data) {
         const data = JSON.parse(msg.web_app_data.data);
-        if (resetFlag) {
-            data.score = 0; // Сбрасываем очки при следующем обновлении
-            data.clicks = 0;
-            data.level = 1;
-        }
         players[data.playerName] = {
             score: data.score,
             clicks: data.clicks,
-            level: data.level
+            level: data.level,
+            acquiredItems: data.acquiredItems,
+            achieved: data.achieved,
+            chatId: msg.chat.id // Сохраняем chatId для уведомлений
         };
         fs.writeFileSync('players.json', JSON.stringify(players));
         console.log(`Сохранены данные игрока ${data.playerName}: ${data.score} очков`);
@@ -51,6 +48,8 @@ bot.on('message', (msg) => {
 
 bot.onText(/\/start/, (msg) => {
     console.log(`Получена команда /start от ${msg.from.id}`);
+    // Отправляем текущий прогресс игроку при старте
+    const playerData = players[playerName] || { score: 0, clicks: 0, level: 1, acquiredItems: [], achieved: [] };
     bot.sendMessage(msg.chat.id, 'Жми "Играть" и погнали!', {
         reply_markup: {
             keyboard: [[{ text: 'Играть', web_app: { url: 'https://twqstty.github.io/HAMSTERR/' } }]],
@@ -75,16 +74,18 @@ bot.onText(/\/stats/, (msg) => {
 bot.onText(/\/reset/, (msg) => {
     console.log(`Получена команда /reset от ${msg.from.id}`);
     if (msg.from.id.toString() === adminId) {
-        players = {};
-        resetFlag = true; // Устанавливаем флаг сброса
         try {
+            players = {};
             fs.writeFileSync('players.json', JSON.stringify(players));
-            bot.sendMessage(adminId, 'Статистика всех игроков сброшена! Перезапусти игру для полного сброса.');
+            bot.sendMessage(adminId, 'Статистика всех игроков сброшена!');
             console.log('Статистика успешно сброшена админом');
-            // Уведомляем всех игроков (опционально)
-            for (const playerName in players) {
-                const chatId = players[playerName].chatId; // Нужно хранить chatId
-                if (chatId) bot.sendMessage(chatId, 'Админ сбросил статистику! Перезапусти игру.');
+            // Уведомляем всех игроков и отправляем сигнал сброса
+            for (const player in players) {
+                const chatId = players[player].chatId;
+                if (chatId) {
+                    bot.sendMessage(chatId, JSON.stringify({ reset: true }));
+                    bot.sendMessage(chatId, 'Админ сбросил статистику! Перезапусти игру.');
+                }
             }
         } catch (err) {
             console.error('Ошибка при сбросе статистики:', err);
