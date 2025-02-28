@@ -3,7 +3,7 @@ const express = require('express');
 const fs = require('fs');
 
 const app = express();
-const port = process.env.PORT || 10000; // Порт из логов Render
+const port = process.env.PORT || 10000;
 app.use(express.json());
 
 const token = process.env.TOKEN;
@@ -13,8 +13,9 @@ if (!token) {
 }
 
 const bot = new TelegramBot(token);
-const adminId = '857785777'; // Твой Telegram ID
+const adminId = '857785777';
 let players = {};
+let resetFlag = false; // Флаг сброса
 
 if (fs.existsSync('players.json')) {
     players = JSON.parse(fs.readFileSync('players.json'));
@@ -33,6 +34,11 @@ bot.setWebHook(`https://hamster-bot-jj2f.onrender.com/bot${token}`)
 bot.on('message', (msg) => {
     if (msg.web_app_data) {
         const data = JSON.parse(msg.web_app_data.data);
+        if (resetFlag) {
+            data.score = 0; // Сбрасываем очки при следующем обновлении
+            data.clicks = 0;
+            data.level = 1;
+        }
         players[data.playerName] = {
             score: data.score,
             clicks: data.clicks,
@@ -70,10 +76,16 @@ bot.onText(/\/reset/, (msg) => {
     console.log(`Получена команда /reset от ${msg.from.id}`);
     if (msg.from.id.toString() === adminId) {
         players = {};
+        resetFlag = true; // Устанавливаем флаг сброса
         try {
             fs.writeFileSync('players.json', JSON.stringify(players));
-            bot.sendMessage(adminId, 'Статистика всех игроков сброшена!');
+            bot.sendMessage(adminId, 'Статистика всех игроков сброшена! Перезапусти игру для полного сброса.');
             console.log('Статистика успешно сброшена админом');
+            // Уведомляем всех игроков (опционально)
+            for (const playerName in players) {
+                const chatId = players[playerName].chatId; // Нужно хранить chatId
+                if (chatId) bot.sendMessage(chatId, 'Админ сбросил статистику! Перезапусти игру.');
+            }
         } catch (err) {
             console.error('Ошибка при сбросе статистики:', err);
             bot.sendMessage(adminId, 'Ошибка при сбросе статистики!');
