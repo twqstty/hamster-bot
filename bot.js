@@ -6,9 +6,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 app.use(express.json());
 
-const token = process.env.TOKEN || '8070086700:AAF-aqPY_6MOqgeBLv5lrB_B75TzeWYkGVM'; // Замени на свой токен
+const token = process.env.TOKEN; // Токен берётся только из переменной окружения
 const bot = new TelegramBot(token);
-const adminId = '857785777'; // Замени на свой Telegram ID
+const adminId = '857785777'; // Твой Telegram ID
 let players = {};
 
 if (fs.existsSync('players.json')) {
@@ -20,7 +20,7 @@ app.post(`/bot${token}`, (req, res) => {
     res.sendStatus(200);
 });
 
-bot.setWebHook(`https://hamster-bot-jj2f.onrender.com${token}`); // Обновишь после Render
+bot.setWebHook(`https://hamster-bot-jj2f.onrender.com/bot${token}`); // Правильный URL от Render
 
 bot.on('message', (msg) => {
     if (msg.web_app_data) {
